@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import serviceSS.entity.Link;
 import serviceSS.repository.LinkRepository;
-
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -14,18 +13,32 @@ import java.util.UUID;
 
 @Service
 public class LinkService {
-
     private final LinkRepository linkRepository;
-
-    @Value("${link.default.expiration.days}")
-    private int defaultExpirationDays;
 
     @Value("${link.default.max.clicks}")
     private int defaultMaxClicks;
 
+    @Value("${link.default.expiration.days}")
+    private int defaultExpirationDays;
+
     public LinkService(LinkRepository linkRepository) {
         this.linkRepository = linkRepository;
     }
+
+    public Link updateLinkClicks(UUID linkId, int userProvidedClicks) {
+        Link link = linkRepository.findById(linkId)
+                .orElseThrow(() -> new IllegalArgumentException("Ссылка не найдена"));
+
+        // Устанавливаем новый лимит кликов
+        int newMaxClicks = Math.max(userProvidedClicks, defaultMaxClicks);
+        link.updateClicks(newMaxClicks);
+
+        // Обновляем срок действия ссылки
+        link.updateExpiration(defaultExpirationDays);
+
+        return linkRepository.save(link);
+    }
+
 
     public Link createLink(String originalUrl, UUID userId, int maxClicks) {
         if (!isValidUrl(originalUrl)) {

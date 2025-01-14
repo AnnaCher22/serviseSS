@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import serviceSS.entity.Link;
 import serviceSS.repository.LinkRepository;
 import serviceSS.service.LinkService;
-
 import java.awt.*;
 import java.net.URI;
 import java.util.Optional;
@@ -28,6 +27,17 @@ public class LinkController {
         this.linkRepository = linkRepository;
     }
 
+    @PutMapping("/{id}/max-clicks")
+    public ResponseEntity<String> updateMaxClicks(@PathVariable UUID id, @RequestParam int maxClicks) {
+        try {
+            Link updatedLink = linkService.updateLinkClicks(id, maxClicks);
+            return ResponseEntity.ok("Лимит переходов обновлён до: " + updatedLink.getClicksLeft() +
+                    ". Срок действия ссылки обновлён до: " + updatedLink.getExpirationDate());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @PostMapping("/create")
     public ResponseEntity<String> createLink(@RequestBody String originalUrl) {
         if (originalUrl.isEmpty()) {
@@ -39,7 +49,10 @@ public class LinkController {
 
         try {
             Link newLink = linkService.createLink(originalUrl, userId, maxClicks);
-            return ResponseEntity.ok("Созданная короткая ссылка: " + newLink.getShortLink());
+            return ResponseEntity.ok("Созданная короткая ссылка: " + newLink.getShortLink() +
+                    ", User ID: " + userId +
+                    ", ID ссылки: " + newLink.getId() +
+                    ", Лимит переходов: " + newLink.getClicksLeft());
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
